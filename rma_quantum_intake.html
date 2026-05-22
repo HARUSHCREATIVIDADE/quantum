@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RMA Quantum — Intake de Clientes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C96A;
+    --gold-pale: #FDF5E6;
+    --gold-pale2: #F5E6C3;
+    --dark: #111827;
+    --dark2: #1F2937;
+    --mid: #374151;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --border2: #D1D5DB;
+    --bg: #F9FAFB;
+    --white: #FFFFFF;
+    --green: #059669;
+    --green-bg: #ECFDF5;
+    --red: #DC2626;
+    --red-bg: #FEF2F2;
+    --blue: #2563EB;
+    --blue-bg: #EFF6FF;
+  }
+
+  html { font-size: 16px; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── LAYOUT ── */
+  .page-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--dark);
+    padding: 2rem 1.5rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    color: var(--dark);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .logo-text { line-height: 1.2; }
+  .logo-text strong { display: block; font-size: 14px; font-weight: 600; color: #fff; }
+  .logo-text span { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+  .nav-title {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .nav-steps { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+  .nav-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: rgba(255,255,255,0.35);
+    font-size: 13px;
+  }
+  .nav-step:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6); }
+  .nav-step.active { background: rgba(201,168,76,0.15); color: var(--gold); }
+  .nav-step.done { color: rgba(255,255,255,0.55); }
+  .nav-step.done .step-num { background: var(--green); color: #fff; border-color: var(--green); }
+
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .nav-step.active .step-num {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--dark);
+    font-weight: 600;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .progress-ring-wrap { text-align: center; }
+  .progress-ring-label { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 8px; }
+  .progress-pct { font-size: 22px; font-weight: 500; color: var(--gold); }
+
+  /* ── MAIN ── */
+  .main-area {
+    padding: 3rem 3.5rem;
+    max-width: 720px;
+  }
+
+  .step-indicator {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  h1.step-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.4rem;
+    line-height: 1.25;
+  }
+
+  .step-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .form-grid { display: grid; gap: 1.25rem; }
+  .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--mid);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  .field-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    background: var(--white);
+    color: var(--dark);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.55; }
+
+  /* ── OPTION CARDS ── */
+  .options-grid { display: grid; gap: 10px; }
+  .options-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .options-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .opt-card {
+    border: 1.5px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    background: var(--white);
+    user-select: none;
+  }
+  .opt-card:hover { border-color: var(--gold-light); background: var(--gold-pale); }
+  .opt-card.selected {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  }
+  .opt-card .oc-title {
+    font-size: 13px; font-weight: 600; color: var(--dark);
+    margin-bottom: 2px;
+  }
+  .opt-card .oc-sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .opt-card .oc-badge {
+    position: absolute; top: 10px; right: 10px;
+    width: 18px; height: 18px;
+    background: var(--gold); border-radius: 50%;
+    display: none; align-items: center; justify-content: center;
+  }
+  .opt-card.selected .oc-badge { display: flex; }
+  .oc-badge svg { width: 10px; height: 10px; stroke: #fff; stroke-width: 3; fill: none; }
+
+  /* ── PRODUCT CARDS ── */
+  .prod-cards { display: flex; flex-direction: column; gap: 10px; }
+  .prod-card {
+    border: 1.5px solid var(--border2);
+    border-radius: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--white);
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .prod-card:hover { border-color: var(--gold-light); }
+  .prod-card.selected {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  }
+  .prod-card.recommended { border-color: var(--gold); }
+  .prod-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--dark); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .prod-card.recommended .prod-num { background: var(--gold); color: var(--dark); }
+  .prod-body { flex: 1; }
+  .prod-tag {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .prod-card.recommended .prod-tag { color: var(--gold); }
+  .prod-name { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 3px; }
+  .prod-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── RANGE ── */
+  .range-wrap { margin-bottom: 0.25rem; }
+  .range-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .range-label { font-size: 11px; font-weight: 600; color: var(--mid); letter-spacing: 0.8px; text-transform: uppercase; }
+  .range-val { font-size: 13px; font-weight: 600; color: var(--gold); font-family: 'DM Mono', monospace; }
+  input[type="range"] {
+    width: 100%; height: 4px; border-radius: 2px;
+    background: var(--border2); cursor: pointer;
+    border: none; padding: 0;
+    accent-color: var(--gold);
+  }
+  .range-ticks { display: flex; justify-content: space-between; margin-top: 5px; }
+  .range-tick { font-size: 10px; color: var(--muted); }
+
+  /* ── TAGS ── */
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag {
+    padding: 6px 13px; border-radius: 20px;
+    border: 1.5px solid var(--border2);
+    font-size: 12px; color: var(--mid);
+    cursor: pointer; transition: all 0.12s;
+    background: var(--white);
+    user-select: none;
+  }
+  .tag:hover { border-color: var(--gold); color: var(--dark); }
+  .tag.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+
+  /* ── ALERT ── */
+  .alert {
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 13px; line-height: 1.55; margin-bottom: 1.25rem;
+  }
+  .alert-gold { background: var(--gold-pale); border: 1px solid var(--gold-pale2); color: #78530A; }
+  .alert-green { background: var(--green-bg); border: 1px solid #A7F3D0; color: #065F46; }
+
+  /* ── BUTTONS ── */
+  .btn-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 2.5rem; gap: 12px;
+  }
+  .btn {
+    padding: 11px 22px; border-radius: 10px;
+    font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; border: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-ghost {
+    background: transparent; color: var(--muted);
+    border: 1.5px solid var(--border2);
+  }
+  .btn-ghost:hover { background: var(--bg); color: var(--dark); }
+  .btn-primary {
+    background: var(--dark); color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .btn-primary:hover { background: var(--mid); }
+  .btn-gold { background: var(--gold); color: var(--dark); font-weight: 600; }
+  .btn-gold:hover { background: var(--gold-light); }
+  .btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+  /* ── STEP VIEWS ── */
+  .step-view { display: none; animation: fadeIn 0.2s ease; }
+  .step-view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SUCCESS ── */
+  .success-view { text-align: left; }
+  .success-header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.75rem; }
+  .success-icon {
+    width: 48px; height: 48px; background: var(--green-bg);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  }
+  .success-icon svg { width: 22px; height: 22px; stroke: var(--green); stroke-width: 2.5; fill: none; }
+  .success-header h2 { font-size: 20px; font-weight: 600; }
+  .success-header p { font-size: 13px; color: var(--muted); }
+
+  .summary-card {
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .summary-header {
+    background: var(--dark); padding: 12px 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .summary-header span { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .summary-header strong { font-size: 13px; color: #fff; }
+  .summary-rows { padding: 4px 0; }
+  .sum-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .sum-row:last-child { border-bottom: none; }
+  .sum-key { color: var(--muted); }
+  .sum-val { font-weight: 500; color: var(--dark); text-align: right; max-width: 60%; }
+  .sum-val.highlight { color: var(--gold); font-weight: 600; font-family: 'DM Mono', monospace; }
+
+  .action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.75rem 0; }
+
+  /* ── SECTION LABEL ── */
+  .section-lbl {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.8px; text-transform: uppercase;
+    margin-bottom: 10px; margin-top: 1.5rem;
+  }
+  .section-lbl:first-child { margin-top: 0; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 860px) {
+    .page-shell { grid-template-columns: 1fr; }
+    .sidebar { position: fixed; bottom: 0; top: auto; height: auto; width: 100%; flex-direction: row; align-items: center; padding: 0.75rem 1rem; z-index: 10; }
+    .sidebar-logo { margin-bottom: 0; margin-right: 1rem; }
+    .sidebar-footer { display: none; }
+    .nav-title { display: none; }
+    .nav-steps { flex-direction: row; gap: 4px; overflow-x: auto; }
+    .nav-step span { display: none; }
+    .main-area { padding: 1.5rem; padding-bottom: 5rem; }
+    .form-grid.cols-2, .options-grid.cols-2, .form-grid.cols-3, .options-grid.cols-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">RMA</div>
+      <div class="logo-text">
+        <strong>Quantum</strong>
+        <span>Intake de Clientes</span>
+      </div>
+    </div>
+
+    <p class="nav-title">Etapas</p>
+    <ul class="nav-steps" id="navSteps">
+      <li class="nav-step active" data-step="0">
+        <div class="step-num">1</div>
+        <span>Empresa</span>
+      </li>
+      <li class="nav-step" data-step="1">
+        <div class="step-num">2</div>
+        <span>Financeiro</span>
+      </li>
+      <li class="nav-step" data-step="2">
+        <div class="step-num">3</div>
+        <span>Situação</span>
+      </li>
+      <li class="nav-step" data-step="3">
+        <div class="step-num">4</div>
+        <span>Objetivos</span>
+      </li>
+      <li class="nav-step" data-step="4">
+        <div class="step-num">5</div>
+        <span>Parceiro</span>
+      </li>
+      <li class="nav-step" data-step="5">
+        <div class="step-num">6</div>
+        <span>Produto</span>
+      </li>
+      <li class="nav-step" data-step="6">
+        <div class="step-num">✓</div>
+        <span>Resultado</span>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="progress-ring-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+          <circle id="progressCircle" cx="32" cy="32" r="26" fill="none" stroke="#C9A84C" stroke-width="4"
+            stroke-dasharray="163.36" stroke-dashoffset="163.36" stroke-linecap="round"
+            transform="rotate(-90 32 32)" style="transition: stroke-dashoffset 0.4s ease;"/>
+          <text x="32" y="37" text-anchor="middle" font-family="DM Mono" font-size="13" font-weight="500" fill="#C9A84C" id="progressPct">0%</text>
+        </svg>
+        <p class="progress-ring-label">Preenchimento</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+
+    <!-- ── STEP 0: Empresa ── -->
+    <div class="step-view active" id="sv0">
+      <p class="step-indicator">Etapa 1 de 6</p>
+      <h1 class="step-title">Dados da empresa</h1>
+      <p class="step-subtitle">Informações básicas para identificação do lead e contexto do diagnóstico.</p>
+
+      <div class="form-grid cols-2">
+        <div class="form-field">
+          <label class="field-label">Nome da empresa</label>
+          <input type="text" id="nomeEmpresa" placeholder="Ex: Grupo Nobre Ltda">
+        </div>
+        <div class="form-field">
+          <label class="field-label">Responsável / Decisor</label>
+          <input type="text" id="nomeResponsavel" placeholder="Ex: João Silva">
+        </div>
+        <div class="form-field">
+          <label class="field-label">E-mail</label>
+          <input type="email" id="email" placeholder="joao@empresa.com.br">
+        </div>
+        <div class="form-field">
+          <label class="field-label">WhatsApp</label>
+          <input type="tel" id="whatsapp" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-field">
+          <label class="field-label">Segmento de atuação</label>
+          <select id="segmento">
+            <option value="">Selecione...</option>
+            <option>Varejo</option>
+            <option>Varejo de Luxo</option>
+            <option>Varejo de Moda</option>
+            <option>Varejo Esportivo</option>
+            <option>Varejo Supermercadista</option>
+            <option>Indústria Alimentícia</option>
+            <option>Agência de Publicidade</option>
+            <option>Serviços B2B</option>
+            <option>Tecnologia / SaaS</option>
+            <option>Construção Civil</option>
+            <option>Saúde e Bem-estar</option>
+            <option>Logística / Transporte</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="field-label">Tempo de mercado</label>
+          <select id="tempoMercado">
+            <option value="">Selecione...</option>
+            <option>Menos de 2 anos</option>
+            <option>2 a 5 anos</option>
+            <option>5 a 10 anos</option>
+            <option>Mais de 10 anos</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <p class="section-lbl">Como chegou até o RMA Quantum?</p>
+      <div class="form-grid cols-2">
+        <div class="form-field">
+          <label class="field-label">Canal de origem</label>
+          <select id="origem">
+            <option value="">Selecione...</option>
+            <option>Indicação de contador</option>
+            <option>Indicação de advogado</option>
+            <option>Indicação de cliente</option>
+            <option>LinkedIn — outreach ativo</option>
+            <option>LinkedIn — inbound</option>
+            <option>Gestor de tráfego / marketing</option>
+            <option>Pesquisa no Google</option>
+            <option>Evento / palestra</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="field-label">Cidade / Estado</label>
+          <input type="text" id="cidade" placeholder="Ex: São Paulo, SP">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <div></div>
+        <button class="btn btn-primary" onclick="goTo(1)">
+          Continuar
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: Financeiro ── -->
+    <div class="step-view" id="sv1">
+      <p class="step-indicator">Etapa 2 de 6</p>
+      <h1 class="step-title">Perfil financeiro</h1>
+      <p class="step-subtitle">Dados confidenciais usados exclusivamente para calibrar o diagnóstico.</p>
+
+      <div class="range-wrap">
+        <div class="range-header">
+          <span class="range-label">Faturamento anual estimado</span>
+          <span class="range-val" id="fatLabel">R$ 2M – 5M</span>
+        </div>
+        <input type="range" id="faturamento" min="0" max="6" step="1" value="2" oninput="updateFat()">
+        <div class="range-ticks">
+          <span class="range-tick">–500k</span>
+          <span class="range-tick">–2M</span>
+          <span class="range-tick">–5M</span>
+          <span class="range-tick">–15M</span>
+          <span class="range-tick">–50M</span>
+          <span class="range-tick">–100M</span>
+          <span class="range-tick">100M+</span>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="range-wrap">
+        <div class="range-header">
+          <span class="range-label">Número de funcionários</span>
+          <span class="range-val" id="funcLabel">11 – 30</span>
+        </div>
+        <input type="range" id="funcionarios" min="0" max="4" step="1" value="1" oninput="updateFunc()">
+        <div class="range-ticks">
+          <span class="range-tick">1–10</span>
+          <span class="range-tick">11–30</span>
+          <span class="range-tick">31–80</span>
+          <span class="range-tick">81–200</span>
+          <span class="range-tick">200+</span>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <p class="section-lbl">Estrutura financeira</p>
+      <div class="form-grid cols-2">
+        <div class="form-field">
+          <label class="field-label">Estrutura societária</label>
+          <select id="estrutura">
+            <option value="">Selecione...</option>
+            <option>Sócio único / MEI / EPP</option>
+            <option>2 a 3 sócios</option>
+            <option>4 ou mais sócios</option>
+            <option>Empresa familiar com múltiplas gerações</option>
+            <option>Holding / grupo empresarial</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="field-label">Regime tributário</label>
+          <select id="regime">
+            <option value="">Selecione...</option>
+            <option>Simples Nacional</option>
+            <option>Lucro Presumido</option>
+            <option>Lucro Real</option>
+            <option>Não sabe</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="section-lbl" style="margin-top: 1.5rem;">A empresa tem área financeira estruturada?</p>
+      <div class="options-grid cols-3">
+        <div class="opt-card" onclick="selOpt(this,'cfo')" data-val="CFO / Diretoria financeira">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">CFO / Diretor</div>
+          <div class="oc-sub">Equipe financeira própria</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'cfo')" data-val="Gerente financeiro">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Gerente</div>
+          <div class="oc-sub">Gestão financeira básica</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'cfo')" data-val="Somente contador externo">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Só contador</div>
+          <div class="oc-sub">Sem gestor financeiro</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(0)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <button class="btn btn-primary" onclick="goTo(2)">
+          Continuar
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Situação ── -->
+    <div class="step-view" id="sv2">
+      <p class="step-indicator">Etapa 3 de 6</p>
+      <h1 class="step-title">Situação atual</h1>
+      <p class="step-subtitle">Qual das descrições mais representa o momento da empresa hoje?</p>
+
+      <div class="options-grid" style="grid-template-columns: 1fr;">
+        <div class="opt-card" onclick="selOpt(this,'situacao')" data-val="Crise de caixa — recuperação urgente">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">🔴 Em crise — caixa comprometido</div>
+          <div class="oc-sub">Passivos descontrolados, dificuldade de honrar compromissos, caixa no limite ou negativo</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'situacao')" data-val="Estável mas sem clareza financeira">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">🟡 Estável, mas sem visibilidade</div>
+          <div class="oc-sub">A empresa paga as contas, mas não sabe exatamente onde está perdendo margem ou valor real</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'situacao')" data-val="Saudável — quer acelerar crescimento">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">🟢 Saudável — quer escalar</div>
+          <div class="oc-sub">Boa geração de caixa, busca expandir EBITDA, entrar em novos mercados ou escalar operação</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'situacao')" data-val="Preparando para M&A, venda ou captação">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">🔵 Preparando saída ou captação</div>
+          <div class="oc-sub">Planeja M&A, captação de investimento, entrada de sócio ou sucessão nos próximos 12–36 meses</div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="form-field">
+        <label class="field-label">Qual é a maior dor hoje? <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--muted);">(texto livre — use as palavras do cliente)</span></label>
+        <textarea id="maiorDor" placeholder="Ex: Não sei se minha margem real é positiva. O caixa é sempre apertado no fim do mês, mas o lucro no papel parece bom. Não consigo entender onde o dinheiro some..."></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(1)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <button class="btn btn-primary" onclick="goTo(3)">
+          Continuar
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Objetivos ── -->
+    <div class="step-view" id="sv3">
+      <p class="step-indicator">Etapa 4 de 6</p>
+      <h1 class="step-title">Objetivo e urgência</h1>
+      <p class="step-subtitle">O que o cliente espera como resultado concreto nos próximos 12 meses? (selecione até 2)</p>
+
+      <div class="options-grid cols-2">
+        <div class="opt-card" onclick="togObj(this)" data-val="Recuperar caixa e estabilidade financeira">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Recuperar caixa</div>
+          <div class="oc-sub">Estabilidade financeira como prioridade</div>
+        </div>
+        <div class="opt-card" onclick="togObj(this)" data-val="Aumentar margem e EBITDA de forma consistente">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Aumentar margem / EBITDA</div>
+          <div class="oc-sub">Crescer resultado com disciplina</div>
+        </div>
+        <div class="opt-card" onclick="togObj(this)" data-val="Ter visibilidade clara dos números (KPIs e dashboards)">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Visibilidade financeira</div>
+          <div class="oc-sub">Dashboard e KPIs para decidir bem</div>
+        </div>
+        <div class="opt-card" onclick="togObj(this)" data-val="Maximizar valuation para venda ou M&A">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Maximizar valuation</div>
+          <div class="oc-sub">Preparar para M&A ou investidor</div>
+        </div>
+        <div class="opt-card" onclick="togObj(this)" data-val="Governança e profissionalização da gestão">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Governança</div>
+          <div class="oc-sub">Conselho, estrutura e processos</div>
+        </div>
+        <div class="opt-card" onclick="togObj(this)" data-val="Expansão — novos mercados ou filiais">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Expansão</div>
+          <div class="oc-sub">Crescimento estruturado com viabilidade</div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="range-wrap">
+        <div class="range-header">
+          <span class="range-label">Urgência percebida pelo cliente</span>
+          <span class="range-val" id="urgLabel">Média</span>
+        </div>
+        <input type="range" id="urgencia" min="1" max="3" step="1" value="2" oninput="updateUrg()">
+        <div class="range-ticks">
+          <span class="range-tick">Baixa — explorando</span>
+          <span class="range-tick">Média — quer avançar</span>
+          <span class="range-tick">Alta — precisa agora</span>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="form-grid cols-2">
+        <div class="form-field">
+          <label class="field-label">Budget disponível</label>
+          <select id="budget">
+            <option value="">Selecione...</option>
+            <option>Até R$ 3.000</option>
+            <option>R$ 3.000 – R$ 8.000</option>
+            <option>R$ 8.000 – R$ 20.000</option>
+            <option>R$ 20.000 – R$ 50.000</option>
+            <option>Acima de R$ 50.000</option>
+            <option>A definir após diagnóstico</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="field-label">Horizonte de decisão</label>
+          <select id="horizonte">
+            <option value="">Selecione...</option>
+            <option>Imediato — esta semana</option>
+            <option>Curto — até 30 dias</option>
+            <option>Médio — 1 a 3 meses</option>
+            <option>Sem prazo definido</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(2)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <button class="btn btn-primary" onclick="goTo(4)">
+          Continuar
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Parceiro ── -->
+    <div class="step-view" id="sv4">
+      <p class="step-indicator">Etapa 5 de 6</p>
+      <h1 class="step-title">Canal e parceiro</h1>
+      <p class="step-subtitle">Identifica envolvimento de parceiros e os documentos disponíveis para o diagnóstico.</p>
+
+      <p class="section-lbl">Veio via parceiro?</p>
+      <div class="options-grid cols-3">
+        <div class="opt-card" onclick="selOpt(this,'parceiro'); showParceiro(true)" data-val="Sim — encaminhado por parceiro">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Sim</div>
+          <div class="oc-sub">Contador, jurídico ou outro</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'parceiro'); showParceiro(false)" data-val="Não — prospecção direta">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Não</div>
+          <div class="oc-sub">Lead direto</div>
+        </div>
+        <div class="opt-card" onclick="selOpt(this,'parceiro'); showParceiro(false)" data-val="Em avaliação — potencial parceiro">
+          <div class="oc-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="oc-title">Em avaliação</div>
+          <div class="oc-sub">Parceiro em potencial</div>
+        </div>
+      </div>
+
+      <div id="parceiroSection" style="display:none; margin-top:1.25rem;">
+        <hr class="divider" style="margin-top:0;">
+        <p class="section-lbl">Dados do parceiro</p>
+        <div class="form-grid cols-2">
+          <div class="form-field">
+            <label class="field-label">Nome / empresa do parceiro</label>
+            <input type="text" id="nomeParceiro" placeholder="Ex: Escritório Contábil Silva">
+          </div>
+          <div class="form-field">
+            <label class="field-label">Tipo de parceiro</label>
+            <select id="tipoParceiro">
+              <option value="">Selecione...</option>
+              <option>Contador / Escritório contábil</option>
+              <option>Advogado societário / M&A</option>
+              <option>Advogado trabalhista / tributário</option>
+              <option>Gestor de tráfego / Marketing digital</option>
+              <option>Wealth manager / Gestor de investimentos</option>
+              <option>Consultor de RH / Organizacional</option>
+              <option>Outro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field" style="margin-top:1rem;">
+          <label class="field-label">Contexto do encaminhamento</label>
+          <textarea id="ctxParceiro" placeholder="Ex: Contador identificou queda de margem bruta e recomendou diagnóstico financeiro aprofundado antes da reunião de sócios..."></textarea>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <p class="section-lbl">Documentos disponíveis para análise</p>
+      <div class="tags-wrap" id="docTags">
+        <span class="tag" onclick="this.classList.toggle('sel')">DRE — últimos 12m</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Balanço patrimonial</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Fluxo de caixa</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Extrato bancário</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Relatório de estoque</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Contratos de receita ativa</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Relatório de dívidas / passivos</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Planilhas de custos</span>
+        <span class="tag" onclick="this.classList.toggle('sel')">Nenhum ainda</span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="form-field">
+        <label class="field-label">Observações para a equipe RMA</label>
+        <textarea id="obsAdicionais" placeholder="Qualquer contexto relevante que não se encaixou nas perguntas anteriores..."></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(3)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <button class="btn btn-primary" onclick="goTo(5); buildRec()">
+          Ver recomendação
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: Produto ── -->
+    <div class="step-view" id="sv5">
+      <p class="step-indicator">Etapa 6 de 6</p>
+      <h1 class="step-title">Produto recomendado</h1>
+      <p class="step-subtitle">Com base no perfil coletado, identificamos o melhor ponto de entrada. Confirme ou ajuste conforme o contexto da conversa.</p>
+
+      <div class="alert alert-gold" id="recReason"></div>
+
+      <div class="prod-cards">
+        <div class="prod-card recommended" onclick="selProd(this)" data-val="RMA Quantum Diagnostic">
+          <div class="prod-num">1</div>
+          <div class="prod-body">
+            <div class="prod-tag">⭐ Recomendado — porta de entrada</div>
+            <div class="prod-name">RMA Quantum Diagnostic</div>
+            <div class="prod-desc">Diagnóstico financeiro e estratégico com IA em 48h. Identifica os 3 maiores vazamentos de lucro e o valuation potencial. Baixo atrito, alta prova de competência.</div>
+          </div>
+        </div>
+        <div class="prod-card" onclick="selProd(this)" data-val="Turnaround Management">
+          <div class="prod-num">2A</div>
+          <div class="prod-body">
+            <div class="prod-tag">Crise · reestruturação</div>
+            <div class="prod-name">Turnaround Management</div>
+            <div class="prod-desc">Reestruturação financeira com foco em geração real de caixa. Para empresas que precisam corrigir rota rapidamente e estabilizar.</div>
+          </div>
+        </div>
+        <div class="prod-card" onclick="selProd(this)" data-val="Value Acceleration">
+          <div class="prod-num">2B</div>
+          <div class="prod-body">
+            <div class="prod-tag">Saudável · crescimento</div>
+            <div class="prod-name">Value Acceleration</div>
+            <div class="prod-desc">Aceleração de EBITDA. Para empresas saudáveis que querem expandir margem com consistência — otimização de preço, mix e eficiência.</div>
+          </div>
+        </div>
+        <div class="prod-card" onclick="selProd(this)" data-val="Board Pack — Recorrente">
+          <div class="prod-num">3</div>
+          <div class="prod-body">
+            <div class="prod-tag">Recorrência · inteligência executiva</div>
+            <div class="prod-name">Board Pack</div>
+            <div class="prod-desc">CFO de elite por assinatura. Report executivo mensal para sócios, conselhos e investidores. Planejado vs. realizado, KPIs e ações corretivas.</div>
+          </div>
+        </div>
+        <div class="prod-card" onclick="selProd(this)" data-val="Valuation">
+          <div class="prod-num">4</div>
+          <div class="prod-body">
+            <div class="prod-tag">Estratégico · societário</div>
+            <div class="prod-name">Valuation</div>
+            <div class="prod-desc">Avaliação técnica robusta (DCF, múltiplos, valor econômico) para processos societários, captação ou venda. Defensável tecnicamente.</div>
+          </div>
+        </div>
+        <div class="prod-card" onclick="selProd(this)" data-val="Deal Preparation & Value Maximization">
+          <div class="prod-num">6</div>
+          <div class="prod-body">
+            <div class="prod-tag">M&A · saída · captação</div>
+            <div class="prod-name">Deal Preparation</div>
+            <div class="prod-desc">Preparação completa para venda, entrada de sócios ou captação. Organização financeira, narrativa para investidores e maximização de valuation.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goTo(4)">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <button class="btn btn-gold" onclick="finalize()">
+          Finalizar intake
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 6: Resultado ── -->
+    <div class="step-view" id="sv6">
+      <div class="success-view">
+        <div class="success-header">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <h2>Intake registrado</h2>
+            <p>Lead qualificado e pronto para o próximo passo comercial</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-header">
+            <span>Resumo do lead —</span>
+            <strong id="sumEmpresa">—</strong>
+          </div>
+          <div class="summary-rows" id="summaryRows"></div>
+        </div>
+
+        <div class="alert alert-green">
+          <strong>Próximo passo sugerido:</strong> Agendar reunião de diagnóstico (30–45 min) com foco no principal ponto de dor identificado. Levar como âncora o "quanto está sendo perdido por mês" com base no faturamento e situação declarada.
+        </div>
+
+        <div class="action-btns">
+          <button class="btn btn-primary" onclick="copyReport()">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar relatório
+          </button>
+          <button class="btn btn-ghost" onclick="printPage()">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir / PDF
+          </button>
+          <button class="btn btn-ghost" onclick="resetAll()">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+            Novo intake
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const FAT_RANGES = ['Até R$ 500k','R$ 500k – R$ 2M','R$ 2M – R$ 5M','R$ 5M – R$ 15M','R$ 15M – R$ 50M','R$ 50M – R$ 100M','Acima de R$ 100M'];
+  const FUNC_RANGES = ['1 – 10','11 – 30','31 – 80','81 – 200','Acima de 200'];
+  const URG_LABELS = ['Baixa — explorando','Média — quer avançar','Alta — precisa agora'];
+
+  let currentStep = 0;
+  const selMap = {};
+  const objectives = [];
+
+  /* ─── NAV ─── */
+  function goTo(n) {
+    document.getElementById('sv'+currentStep).classList.remove('active');
+    currentStep = n;
+    document.getElementById('sv'+n).classList.add('active');
+    updateNav();
+    window.scrollTo(0,0);
+  }
+
+  function updateNav() {
+    const items = document.querySelectorAll('.nav-step');
+    items.forEach((el,i) => {
+      el.classList.remove('active','done');
+      if(i === currentStep) el.classList.add('active');
+      else if(i < currentStep) {
+        el.classList.add('done');
+        el.querySelector('.step-num').textContent = '✓';
+      } else {
+        el.querySelector('.step-num').textContent = i+1;
+      }
+    });
+    const pct = Math.round((currentStep/6)*100);
+    const circ = document.getElementById('progressCircle');
+    const r = 26, c = 2*Math.PI*r;
+    circ.style.strokeDashoffset = c - (pct/100)*c;
+    document.getElementById('progressPct').textContent = pct+'%';
+  }
+
+  /* ─── CONTROLS ─── */
+  function updateFat() {
+    document.getElementById('fatLabel').textContent = FAT_RANGES[document.getElementById('faturamento').value];
+  }
+  function updateFunc() {
+    document.getElementById('funcLabel').textContent = FUNC_RANGES[document.getElementById('funcionarios').value];
+  }
+  function updateUrg() {
+    document.getElementById('urgLabel').textContent = URG_LABELS[document.getElementById('urgencia').value-1];
+  }
+
+  function selOpt(el, group) {
+    document.querySelectorAll('.opt-card[data-val]').forEach(c => {
+      if(c.getAttribute('onclick') && c.getAttribute('onclick').includes("'"+group+"'")) {
+        c.classList.remove('selected');
+      }
+    });
+    el.classList.add('selected');
+    selMap[group] = el.dataset.val;
+  }
+
+  function togObj(el) {
+    const val = el.dataset.val;
+    if(el.classList.contains('selected')) {
+      el.classList.remove('selected');
+      const i = objectives.indexOf(val);
+      if(i>-1) objectives.splice(i,1);
+    } else {
+      if(objectives.length >= 2) {
+        const first = document.querySelector('.opt-card.selected[data-val="'+objectives[0]+'"]');
+        if(first) first.classList.remove('selected');
+        objectives.shift();
+      }
+      el.classList.add('selected');
+      objectives.push(val);
+    }
+  }
+
+  function showParceiro(v) {
+    document.getElementById('parceiroSection').style.display = v ? 'block' : 'none';
+  }
+
+  function selProd(el) {
+    document.querySelectorAll('.prod-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    selMap['produto'] = el.dataset.val;
+  }
+
+  /* ─── RECOMMENDATION ─── */
+  function buildRec() {
+    const sit = selMap['situacao'] || '';
+    const objs = objectives.join(', ');
+    let reason = '';
+
+    if(sit.includes('Crise')) {
+      reason = '⚡ <strong>Situação de crise detectada.</strong> O Diagnostic entra primeiro para mapear tecnicamente onde está o sangramento e justificar o plano de Turnaround. Sem dados, a reestruturação não tem base defensável.';
+    } else if(sit.includes('M&A') || objs.includes('valuation')) {
+      reason = '🎯 <strong>Perfil de saída ou M&A.</strong> O Diagnostic estabelece a linha de base e identifica os quick wins que aumentam valuation antes do processo. É o passo obrigatório antes do Deal Preparation.';
+    } else if(sit.includes('Estável') || objs.includes('Visibilidade')) {
+      reason = '📊 <strong>Falta de clareza financeira.</strong> O Diagnostic entrega em 48h os 3 maiores vazamentos de lucro. Cria o "efeito uau" e abre caminho natural para o Board Pack recorrente.';
+    } else if(sit.includes('Saudável') || objs.includes('EBITDA')) {
+      reason = '🚀 <strong>Empresa saudável buscando escala.</strong> O Diagnostic primeiro mapeia as alavancas de EBITDA disponíveis. Value Acceleration fica como upsell natural após a entrega.';
+    } else {
+      reason = '🔍 <strong>Ponto de entrada padrão.</strong> O Diagnostic é a porta zero que cria base técnica para qualquer produto e prova competência com baixo atrito e alta velocidade de entrega.';
+    }
+
+    document.getElementById('recReason').innerHTML = reason;
+    document.querySelectorAll('.prod-card').forEach(c=>c.classList.remove('selected'));
+    const rec = document.querySelector('.prod-card[data-val="RMA Quantum Diagnostic"]');
+    if(rec) rec.classList.add('selected');
+    selMap['produto'] = 'RMA Quantum Diagnostic';
+  }
+
+  /* ─── FINALIZE ─── */
+  function finalize() {
+    const empresa = v('nomeEmpresa');
+    const resp = v('nomeResponsavel');
+    const email = v('email');
+    const wpp = v('whatsapp');
+    const seg = v('segmento');
+    const tempo = v('tempoMercado');
+    const origem = v('origem');
+    const cidade = v('cidade');
+    const fat = FAT_RANGES[document.getElementById('faturamento').value];
+    const func = FUNC_RANGES[document.getElementById('funcionarios').value];
+    const estrutura = v('estrutura');
+    const regime = v('regime');
+    const cfo = selMap['cfo'] || '—';
+    const sit = selMap['situacao'] || '—';
+    const dor = v('maiorDor');
+    const objs = objectives.length ? objectives.join(' · ') : '—';
+    const urg = URG_LABELS[document.getElementById('urgencia').value-1];
+    const budget = v('budget');
+    const horizonte = v('horizonte');
+    const parceiro = selMap['parceiro'] || '—';
+    const nomeParceiro = v('nomeParceiro');
+    const tipoParceiro = v('tipoParceiro');
+    const docs = [...document.querySelectorAll('#docTags .tag.sel')].map(t=>t.textContent.trim()).join(', ') || 'Nenhum';
+    const obs = v('obsAdicionais');
+    const produto = selMap['produto'] || 'RMA Quantum Diagnostic';
+
+    document.getElementById('sumEmpresa').textContent = empresa || '—';
+
+    const rows = [
+      ['Responsável', resp],
+      ['E-mail', email],
+      ['WhatsApp', wpp],
+      ['Cidade', cidade],
+      ['Segmento', seg],
+      ['Tempo de mercado', tempo],
+      ['Origem do lead', origem],
+      ['Faturamento', fat],
+      ['Funcionários', func],
+      ['Estrutura societária', estrutura],
+      ['Regime tributário', regime],
+      ['Estrutura financeira', cfo],
+      ['Situação atual', sit],
+      ['Maior dor', dor],
+      ['Objetivos', objs],
+      ['Urgência', urg],
+      ['Budget', budget],
+      ['Horizonte de decisão', horizonte],
+      ['Canal de parceiro', parceiro],
+      ['Nome do parceiro', nomeParceiro || '—'],
+      ['Tipo de parceiro', tipoParceiro || '—'],
+      ['Documentos disponíveis', docs],
+      ['Observações', obs || '—'],
+      ['PRODUTO INDICADO', produto]
+    ];
+
+    const rowsHtml = rows.map(([k,vv]) =>
+      `<div class="sum-row"><span class="sum-key">${k}</span><span class="sum-val${k==='PRODUTO INDICADO'?' highlight':''}">${vv||'—'}</span></div>`
+    ).join('');
+
+    document.getElementById('summaryRows').innerHTML = rowsHtml;
+
+    goTo(6);
+    window.scrollTo(0,0);
+  }
+
+  function v(id) { return (document.getElementById(id)||{}).value || ''; }
+
+  /* ─── COPY REPORT ─── */
+  function copyReport() {
+    const rows = [...document.querySelectorAll('.sum-row')];
+    let txt = 'RMA QUANTUM — INTAKE DE CLIENTE\n';
+    txt += '================================\n\n';
+    rows.forEach(r => {
+      const k = r.querySelector('.sum-key').textContent;
+      const v = r.querySelector('.sum-val').textContent;
+      txt += k.padEnd(28,' ') + v + '\n';
+    });
+    txt += '\n— Gerado via RMA Quantum Intake System';
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = document.querySelector('.action-btns .btn-primary');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(()=>{ btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar relatório'; }, 2000);
+    });
+  }
+
+  function printPage() { window.print(); }
+  function resetAll() { location.reload(); }
+</script>
+</body>
+</html>
